@@ -1,0 +1,26 @@
+{
+  "name": "sipa",
+  "private": true,
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "web",
+    "solver"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "npm run db:generate -w @sipa/web",
+    "db:migrate": "npm run db:migrate -w @sipa/web --",
+    "db:seed": "npm run db:seed -w @sipa/web"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "turbo": "2.11.10"
+  }
+}

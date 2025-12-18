@@ -1,0 +1,9 @@
+{
+  "name": "@sipa/solver",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": ".venv/bin/uvicorn app:app --reload --host 127.0.0.1 --port 8000",
+    "test": ".venv/bin/python -m pytest"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "APP_URL",
+    "BETTER_AUTH_SECRET",
+    "SOLVER_URL",
+    "SOLVER_TOKEN",
+    "SEED_*",
+    "PORT",
+    "HOSTNAME"
+  ],
+  "tasks": {
+    "dev": { "cache": false, "persistent": true },
+    "db:generate": { "outputs": ["src/generated/prisma/**"] },
+    "build": {
+      "dependsOn": ["db:generate"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "lint": { "outputs": [] },
+    "typecheck": { "dependsOn": ["db:generate"], "outputs": [] },
+    "test": { "outputs": [] }
+  }
+}

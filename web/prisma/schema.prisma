@@ -1,0 +1,326 @@
+// SIPA · Asignación de prácticas (PDC Cátedra ENIA_UPV)
+// Prisma ORM 7 — la URL de conexión vive en prisma.config.ts, no aquí.
+// Migraciones: `npx prisma migrate dev --name <cambio>` en local,
+//              `npx prisma migrate deploy` en el arranque del contenedor.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum Role {
+  ADMIN // coordinación del centro (UPV)
+  TUTOR // docente tutor académico
+  STUDENT
+  COMPANY // persona de contacto de una empresa colaboradora
+}
+
+enum SimulationStatus {
+  RUNNING // la lista muestra "Calculando…" hasta que cambia
+  COMPLETED
+  FAILED
+}
+
+enum NotificationType {
+  SIMULATION_COMPLETED // → coordinación
+  SIMULATION_FAILED // → coordinación
+  ASSIGNMENT_PUBLISHED // → estudiante, empresa y tutor afectados
+}
+
+// ─────────────── Autenticación (tablas que usa Better Auth) ───────────────
+// Email + contraseña: el hash vive en Account.password (providerId "credential").
+// Si cambias los plugins de Better Auth, regenera con
+// `npx @better-auth/cli generate` y fusiona aquí.
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(STUDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  student   Student?
+  tutor     Tutor?
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  simulations   Simulation[]
+  feedback      AssignmentFeedback[]
+  notifications Notification[]
+
+  @@index([companyId])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ───────────────────────────── Actores ─────────────────────────────
+
+model Student {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program       String? // ciclo o titulación
+  address       String
+  lat           Float? // del CSV (lat/lng); geocodificar es opcional
+  lng           Float?
+  maxDistanceKm Int? // restricción logística propia (null = la de la simulación)
+  // Criterio de equidad (zona rural, menos recursos…). Solo el indicador:
+  // el motivo NO se guarda (minimización de datos, RGPD).
+  priority      Boolean @default(false)
+
+  competencies StudentCompetency[]
+  preferences  StudentPreference[]
+  assignments  Assignment[]
+}
+
+model Tutor {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  String?
+  address     String
+  lat         Float?
+  lng         Float?
+  maxStudents Int     @default(8) // carga máxima de supervisión
+
+  assignments Assignment[]
+}
+
+model Company {
+  id         String      @id @default(cuid())
+  name       String
+  taxId      String?     @unique // CIF
+  users      User[]
+  placements Placement[]
+  createdAt  DateTime    @default(now())
+}
+
+model Placement {
+  id               String         @id @default(cuid())
+  companyId        String
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  seats            Int            @default(1)
+  address          String
+  lat              Float?
+  lng              Float?
+  // Qué formulario de competencias usa este puesto (lo elige quien crea la plaza)
+  competencyFormId String
+  competencyForm   CompetencyForm @relation(fields: [competencyFormId], references: [id], onDelete: Restrict)
+  // Dependencia entre plazas del modelo SIPA (opcional; la semántica la aplica el algoritmo)
+  dependsOnId      String?
+  dependsOn        Placement?     @relation("PlacementDependency", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents       Placement[]    @relation("PlacementDependency")
+  active           Boolean        @default(true) // baja lógica: no se borran plazas con historial
+  createdAt        DateTime       @default(now())
+
+  requirements PlacementRequirement[]
+  preferences  StudentPreference[]
+  assignments  Assignment[]
+
+  @@index([companyId])
+}
+
+// ─────────────── Competencias configurables (Opciones → Competencias) ───────────────
+
+model Competency {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  formItems     CompetencyFormItem[]
+  requirements  PlacementRequirement[]
+  studentLevels StudentCompetency[]
+}
+
+model CompetencyForm {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  items      CompetencyFormItem[]
+  placements Placement[]
+}
+
+model CompetencyFormItem {
+  formId       String
+  form         CompetencyForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  competencyId String
+  competency   Competency     @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+  position     Int            @default(0)
+
+  @@id([formId, competencyId])
+}
+
+// Nivel requerido por la empresa para cada competencia del formulario de la plaza (1–5)
+model PlacementRequirement {
+  placementId  String
+  placement    Placement  @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  competencyId String
+  competency   Competency @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+  level        Int
+
+  @@id([placementId, competencyId])
+}
+
+// Autoevaluación del estudiante (1–5) + preferencia de desarrollo competencial.
+// Se guarda por competencia: si dos formularios comparten una, se responde una vez.
+model StudentCompetency {
+  studentId      String
+  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  competencyId   String
+  competency     Competency @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+  level          Int
+  wantsToDevelop Boolean    @default(false)
+  updatedAt      DateTime   @updatedAt
+
+  @@id([studentId, competencyId])
+}
+
+model StudentPreference {
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  placementId String
+  placement   Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  rank        Int // 1 = primera opción
+
+  @@id([studentId, placementId])
+  @@unique([studentId, rank])
+}
+
+// ───────────────────────────── Simulaciones ─────────────────────────────
+
+model Simulation {
+  id          String           @id @default(cuid())
+  name        String
+  status      SimulationStatus @default(RUNNING)
+  algorithm   String // clave del registro del solver: "placeholder", "sipa_ilp"…
+  params      Json // pesos, distancia máxima, asignar tutores, límite de tiempo…
+  input       Json? // copia exacta de lo enviado al solver (reproducibilidad)
+  metrics     Json? // calculadas por el solver con el mismo código para todos los algoritmos
+  error       String?
+  // "Ajustar y relanzar": la nueva simulación apunta a la que se ajustó
+  parentId    String?
+  parent      Simulation?      @relation("SimulationRerun", fields: [parentId], references: [id], onDelete: SetNull)
+  reruns      Simulation[]     @relation("SimulationRerun")
+  createdById String
+  createdBy   User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime         @default(now())
+  finishedAt  DateTime?
+  publishedAt DateTime? // solo una publicada a la vez (se garantiza en la acción de publicar)
+
+  assignments Assignment[]
+
+  @@index([status])
+}
+
+model Assignment {
+  id           String     @id @default(cuid())
+  simulationId String
+  simulation   Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  placementId  String? // null = estudiante sin plaza en esta simulación
+  placement    Placement? @relation(fields: [placementId], references: [id], onDelete: Restrict)
+  tutorId      String?
+  tutor        Tutor?     @relation(fields: [tutorId], references: [id], onDelete: Restrict)
+  score        Float?
+  distanceKm   Float?
+
+  feedback AssignmentFeedback[]
+
+  @@unique([simulationId, studentId])
+  @@index([placementId])
+  @@index([tutorId])
+}
+
+// Botones de valoración que solo aparecen junto a una asignación publicada.
+// Una valoración por persona y asignación (se puede cambiar).
+model AssignmentFeedback {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating       Int // 1–5
+  comment      String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([assignmentId, userId])
+}
+
+// ───────────────────────────── Notificaciones ─────────────────────────────
+// Solo eventos nuevos; nada de configuración ni contenido fijo.
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  href      String? // pantalla a la que lleva al pulsarla
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt])
+}

@@ -1,0 +1,15 @@
+{
+  "simulationId": "test", "algorithm": "placeholder",
+  "params": {"weights": {"preference": 0.5, "competency": 0.3, "distance": 0.2}, "maxDistanceKm": 40, "assignTutors": true, "timeLimitSec": 300, "seed": 7},
+  "students": [
+    {"id": "s1", "lat": 39.48, "lng": -0.34, "priority": true, "preferences": ["p1", "p2"], "competencies": {"c1": {"level": 3, "wantsToDevelop": true}}},
+    {"id": "s2", "lat": 39.47, "lng": -0.35, "preferences": ["p2", "p1"]},
+    {"id": "s3", "lat": 39.46, "lng": -0.36, "preferences": ["p1"]},
+    {"id": "s4", "lat": 40.7, "lng": -0.36, "preferences": ["p1"]}
+  ],
+  "placements": [
+    {"id": "p1", "companyId": "e1", "seats": 1, "lat": 39.47, "lng": -0.38, "requirements": {"c1": 4}},
+    {"id": "p2", "companyId": "e1", "seats": 2, "lat": 39.48, "lng": -0.35}
+  ],
+  "tutors": [{"id": "t1", "lat": 39.48, "lng": -0.35, "capacity": 2}, {"id": "t2", "lat": 39.49, "lng": -0.36, "capacity": 1}]
+}

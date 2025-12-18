@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/.turbo
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.tsbuildinfo
+.env*
+**/.env*
+.git
+backups
+web/src/generated
