@@ -58,6 +58,7 @@ model User {
 
   simulations   Simulation[]
   feedback      AssignmentFeedback[]
+  pilotResponse PilotResponse?
   notifications Notification[]
 
   @@index([companyId])
@@ -307,6 +308,18 @@ model AssignmentFeedback {
   updatedAt    DateTime   @updatedAt
 
   @@unique([assignmentId, userId])
+}
+
+// One editable pilot questionnaire per participant; no sensitive background data.
+model PilotResponse {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usability    Int
+  usefulness   Int
+  satisfaction Int
+  barriers     String?
+  updatedAt    DateTime @updatedAt
 }
 
 // ───────────────────────────── Notificaciones ─────────────────────────────

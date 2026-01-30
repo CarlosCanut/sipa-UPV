@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { PageHeading } from "@/components/page-heading";
@@ -35,6 +36,7 @@ export default async function DataPage({
         })
       ).map((p) => ({
         id: p.id,
+        href: `/plazas/${p.id}`,
         name: p.title,
         company: p.company.name,
         seats: p.seats,
@@ -57,6 +59,7 @@ export default async function DataPage({
         })
       ).map((t) => ({
         id: t.id,
+        href: `/datos/tutores/${t.id}`,
         name: t.user.name,
         email: t.user.email,
         department: t.department,
@@ -78,6 +81,7 @@ export default async function DataPage({
         })
       ).map((c) => ({
         id: c.id,
+        href: `/datos/empresas/${c.id}`,
         name: c.name,
         taxId: c.taxId,
         placements: c.placements.length,
@@ -103,6 +107,7 @@ export default async function DataPage({
         })
       ).map((s) => ({
         id: s.id,
+        href: `/datos/estudiantes/${s.id}`,
         name: s.user.name,
         program: s.program,
         email: s.user.email,
@@ -116,8 +121,29 @@ export default async function DataPage({
     <>
       <PageHeading
         title="Datos del proyecto"
-        description="Consulta el alumnado, las oportunidades y la capacidad de tutoría de tu centro."
-      />
+        description="Prepara los datos antes de simular. Abre cualquier registro para editarlo."
+      >
+        <Button asChild variant="outline">
+          <Link href="/datos/importar">Importar CSV</Link>
+        </Button>
+        <Button asChild>
+          <Link
+            href={
+              tab === "empresas"
+                ? "/datos/empresas/nueva"
+                : tab === "plazas"
+                  ? "/plazas/nueva"
+                  : "/opciones/usuarios"
+            }
+          >
+            {tab === "empresas"
+              ? "Nueva empresa"
+              : tab === "plazas"
+                ? "Nueva oferta"
+                : "Crear cuenta"}
+          </Link>
+        </Button>
+      </PageHeading>
       <nav
         className="mb-6 flex gap-6 overflow-x-auto border-b"
         aria-label="Tipos de datos"
@@ -140,8 +166,8 @@ export default async function DataPage({
         label="Buscar en los datos…"
       />
       <p className="mt-5 text-xs text-muted-foreground">
-        Vista de consulta. La importación CSV y la edición estarán disponibles
-        en una siguiente fase.
+        Estudiantes y tutores se crean desde Usuarios. Cada persona puede
+        completar su ficha desde Mi perfil.
       </p>
     </>
   );

@@ -13,14 +13,17 @@ export function PublishedTable({
         { key: "company", label: "Empresa" },
         { key: "placement", label: "Plaza" },
         { key: "tutor", label: "Tutor/a" },
+        { key: "rating", label: "Tu valoración" },
       ]}
       rows={rows.map((a) => ({
         id: a.id,
+        href: `/asignaciones/${a.id}`,
         name: a.student.user.name,
         program: a.student.program,
         company: a.placement?.company.name,
         placement: a.placement?.title ?? "Sin asignar",
         tutor: a.tutor?.user.name ?? "Sin tutor",
+        rating: a.feedback[0] ? `${a.feedback[0].rating} / 5` : "Pendiente",
       }))}
     />
   ) : (

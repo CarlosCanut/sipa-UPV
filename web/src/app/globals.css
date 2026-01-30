@@ -102,6 +102,24 @@
   .field {
     @apply grid gap-2 text-sm font-medium;
   }
+  .select {
+    @apply h-10 w-full rounded-md border bg-background px-3 text-sm;
+  }
+  .textarea {
+    @apply w-full rounded-md border bg-background p-3 text-sm;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply size-4 shrink-0 accent-primary;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  input:focus-visible,
+  summary:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
   .hint {
     @apply text-xs font-normal leading-5 text-muted-foreground;
   }

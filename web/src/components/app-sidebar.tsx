@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
+  ClipboardCheck,
   BriefcaseBusiness,
   Database,
   FileCheck2,
@@ -88,7 +89,15 @@ export function AppSidebar({ user }: { user: { name: string; role: Role } }) {
             {roleLabels[user.role]}
           </SidebarGroupLabel>
           <SidebarMenu>
-            {navigation[user.role].map((item) => (
+            {[
+              ...navigation[user.role],
+              { href: "/opciones/perfil", label: "Mi perfil", icon: UserRound },
+              {
+                href: "/evaluacion",
+                label: "Evaluación del piloto",
+                icon: ClipboardCheck,
+              },
+            ].map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild

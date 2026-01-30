@@ -23,6 +23,12 @@ export default async function AppLayout({
   });
   return (
     <SidebarProvider>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-card focus:px-4 focus:py-3"
+      >
+        Saltar al contenido
+      </a>
       <AppSidebar user={user} />
       <SidebarInset className="min-w-0 bg-background">
         <header className="flex h-18 items-center gap-3 border-b bg-card px-5 md:px-9">

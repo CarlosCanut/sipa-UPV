@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, GitBranch } from "lucide-react";
 import { db } from "@/lib/db";
@@ -9,6 +10,7 @@ import { PageHeading } from "@/components/page-heading";
 import { SimulationDialog } from "@/components/simulation-dialog";
 import { SimulationStatus } from "@/components/simulation-status";
 import { RefreshWhileRunning } from "@/components/refresh-while-running";
+import { DataReadiness } from "@/components/data-readiness";
 import {
   Table,
   TableBody,
@@ -33,8 +35,17 @@ export default async function SimulationsPage() {
         title="Simulaciones"
         description="Crea propuestas, compara resultados y publica las asignaciones."
       >
+        <Button asChild variant="outline">
+          <Link href="/simulaciones/comparar">Comparar propuestas</Link>
+        </Button>
         <SimulationDialog algorithms={algorithms} />
       </PageHeading>
+      <DataReadiness />
+      <p className="mb-6 rounded-lg border bg-accent p-4 text-sm text-accent-foreground">
+        El algoritmo disponible es una referencia heurística de demostración. La
+        integración del modelo SIPA validado y su evaluación en centros están
+        pendientes.
+      </p>
       <RefreshWhileRunning
         running={simulations.some((s) => s.status === "RUNNING")}
       />

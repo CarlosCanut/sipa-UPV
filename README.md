@@ -1,6 +1,6 @@
 # SIPA · Prácticas
 
-A small, self-hosted base for assigning students to company placements and academic tutors. Two npm workspaces coordinated by **Turborepo**: **Next.js 16 / React / TypeScript** in `web`, and **Python 3.12 / FastAPI** in `solver`. PostgreSQL 17 is the only database. UI text is Spanish.
+A small, self-hosted pilot application for assigning students to company placements and academic tutors. Two npm workspaces coordinated by **Turborepo**: **Next.js 16 / React / TypeScript** in `web`, and **Python 3.12 / FastAPI** in `solver`. PostgreSQL 17 is the only database. UI text is Spanish.
 
 ## Run with Docker
 
@@ -25,13 +25,15 @@ The seed adds 30 synthetic students (5 priority), 5 companies, 12 offers with 36
 
 ## What works
 
-- Email/password login, closed sign-up, role checks on every page and action, admin-created accounts with a one-time password display, and password change.
-- Read-only data tables with search, sorting and pagination.
-- New simulations, automatic refresh while running, metrics and all student assignment rows, parent-linked reruns with prefilled settings, and publishing.
-- Published student, company and tutor views, scoped to the current user; unread event notifications.
-- Deterministic placeholder solver behind a fixed contract. The real research algorithm can be added without changing the HTTP handlers.
+- **Coordination:** accounts, editable project data, validated CSV preview/import, competencies/forms, readiness checks, simulations, comparisons, publication, feedback and CSV exports.
+- **Students:** ranked offers, competency self-assessment/development interests, location/travel limit, published assignment, contacts and rating.
+- **Companies:** offers, capacity/location/competency requirements, deactivation, assigned students, contacts and rating.
+- **Tutors:** location/capacity, assigned workload, contacts and rating.
+- **Everyone:** profile/password, notifications, an editable pilot questionnaire, responsive navigation and server-side access checks.
 
-As specified in the base plan, competency/form editing, student preferences and company placements are labeled placeholders. CSV import/export, feedback, geocoding and manual assignment are later work. Papa Parse is deliberately deferred until CSV import exists. This repository implements the supplied base plan; the richer reference demo contains later-phase UX.
+The solver is still a **greedy demonstration baseline**, not the validated research model. Development interests and dependencies are not enforced by it. Research integration, real-center validation and impact claims remain pending. See [requirements coverage](docs/requirements.md) and [navigation](docs/navigation.md).
+
+CSV: download a current dataset or template from Datos → Importar CSV, edit it, preview errors, then import. Student/tutor accounts must already exist. Coordinates are entered manually; no geocoding service is needed. Exports of assignments, metrics and ratings are on each simulation; questionnaire exports are in Evaluación del piloto.
 
 ## Architecture and files
 
@@ -44,7 +46,7 @@ web/
   src/app/             Spanish routes, Server Actions, auth and health handlers
   src/components/      App shell, forms, tables; ui/ contains shadcn primitives
   src/lib/             Auth/role guards, Prisma client, Zod schemas, simulation lifecycle
-  prisma/              Unmodified supplied schema, committed migrations, idempotent seed
+  prisma/              Schema + pilot questionnaire extension, migrations, idempotent seed
   prisma.config.ts     Prisma 7 configuration
   Dockerfile           deps → builder → migrator / non-root runner
 solver/
@@ -57,6 +59,7 @@ deploy/Caddyfile        Optional public HTTPS reverse proxy
 docker-compose.yml     db, migrate, solver, web; optional caddy
 docker-compose.dev.yml Local-only database/solver ports for host development
 turbo.json             Task graph, caching and environment forwarding
+docs/                  Requirement coverage and navigation map
 AGENTS.md              Short contributor conventions
 ```
 
@@ -110,7 +113,7 @@ Stop the Docker `web` and `solver` services first if they are already running, t
 ```sh
 npm run lint
 npm run typecheck
-npm run test                # Web contract tests + Python pytest via Turbo (local venv required)
+npm run test                # Web validation/CSV/scope/metric tests + Python pytest via Turbo (local venv required)
 npm run build
 # Docker equivalents:
 docker compose run --rm solver pytest
@@ -142,8 +145,10 @@ docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB
 
 The 52 px `web/public/upv-logo.svg` is a neutral placeholder, not an official UPV mark. Replace it with the official SVG from the UPV brand pack after brand-use approval. The marked CSS tokens in `globals.css` are provisional teal; no institutional red is used as a brand color.
 
-Framework references: [Next.js after](https://nextjs.org/docs/app/api-reference/functions/after), [Better Auth Next.js integration](https://better-auth.com/docs/integrations/next), [Prisma 7 configuration](https://www.prisma.io/docs/orm/v7/reference/prisma-config-reference).
+Framework references: [Papa Parse CSV](https://www.papaparse.com/docs), [Next.js after](https://nextjs.org/docs/app/api-reference/functions/after), [Better Auth Next.js integration](https://better-auth.com/docs/integrations/next), [Prisma 7 configuration](https://www.prisma.io/docs/orm/v7/reference/prisma-config-reference).
 
 ## Verification
 
-Verified locally on 22 October 2026: clean-volume Docker startup and migrations; all three long-running services healthy; 11 solver tests and 5 web contract tests; ESLint and TypeScript; browser login for all four roles, automatic completion, 30 assignment rows, linked rerun, publication and notifications; direct HTTP rejection of student admin actions; account/password flow; mobile navigation. After `down` / `up`, the same 30 students, 12 offers, 6 tutors, 5 companies, 2 simulations and 60 assignment rows remained, with one publication. Public-domain HTTPS still requires deployment to a real domain.
+Verified 27 October 2026: production Docker build and migration; 12 web tests, 11 solver tests, ESLint and TypeScript; browser checks for all four roles, ranking, profile/offer/catalog saves, assignment feedback, survey, scenario comparison, CSV template download and phone-width navigation. Direct HTTP checks cover admin-only actions, profile/offer ownership, priority escalation, published-assignment feedback, atomic CSV rejection/import and all eight export types. Temporary test records were removed. Existing demo records and publication were preserved.
+
+Base acceptance on 22 October also covered clean-volume startup, simulation/rerun/publication and persistence across restarts. Public HTTPS requires a real domain. Synthetic technical checks do not constitute a field pilot.

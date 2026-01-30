@@ -96,7 +96,17 @@ export function DataTable({
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id} className="bg-muted/50">
                 {group.headers.map((header) => (
-                  <TableHead key={header.id} className="h-12 px-5">
+                  <TableHead
+                    key={header.id}
+                    className="h-12 px-5"
+                    aria-sort={
+                      header.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : header.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : "none"
+                    }
+                  >
                     <button
                       onClick={header.column.getToggleSortingHandler()}
                       className="flex items-center gap-2 text-xs font-medium"

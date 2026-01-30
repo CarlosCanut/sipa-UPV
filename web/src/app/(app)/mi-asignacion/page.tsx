@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { FeedbackForm } from "@/components/feedback-form";
+import { Button } from "@/components/ui/button";
 import { Building2, MapPin, UserRound } from "lucide-react";
 import { requireRole } from "@/lib/session";
 import { publishedAssignments } from "@/lib/published";
@@ -10,7 +13,15 @@ export default async function MyAssignmentPage() {
       <PageHeading
         title="Mi asignación"
         description="Tu próximo paso, con toda la información en un solo lugar."
-      />
+      >
+        {assignment && (
+          <Button asChild variant="outline">
+            <Link href={`/asignaciones/${assignment.id}`}>
+              Detalles y contactos
+            </Link>
+          </Button>
+        )}
+      </PageHeading>
       {assignment?.placement ? (
         <div className="grid gap-5 lg:grid-cols-3">
           <section className="panel lg:col-span-2">
@@ -68,6 +79,19 @@ export default async function MyAssignmentPage() {
           </p>
         </div>
       )}
+      {assignment && (
+        <div className="mt-6">
+          <FeedbackForm
+            assignmentId={assignment.id}
+            initial={assignment.feedback[0]}
+          />
+        </div>
+      )}
+      <p className="mt-6 text-sm">
+        <Link className="text-primary underline" href="/preferencias">
+          Revisar mis preferencias y competencias
+        </Link>
+      </p>
     </>
   );
 }

@@ -19,6 +19,7 @@ export async function publishedAssignments(userId: string, role: Role) {
     where: { simulation: { publishedAt: { not: null } }, ...scope },
     include: {
       student: { include: { user: true } },
+      feedback: { where: { userId } },
       placement: { include: { company: true } },
       tutor: { include: { user: true } },
     },

@@ -13,6 +13,9 @@ import { RefreshWhileRunning } from "@/components/refresh-while-running";
 import { PublishButton } from "@/components/publish-button";
 import { Metrics } from "@/components/metrics";
 import { DataTable } from "@/components/data-table";
+import { ExportButton } from "@/components/export-button";
+import { Button } from "@/components/ui/button";
+import { roleLabels } from "@/lib/roles";
 export default async function SimulationPage({
   params,
 }: {
@@ -30,6 +33,7 @@ export default async function SimulationPage({
           orderBy: { student: { user: { name: "asc" } } },
           include: {
             student: { include: { user: true } },
+            feedback: { include: { user: { select: { role: true } } } },
             placement: { include: { company: true } },
             tutor: { include: { user: true } },
           },
@@ -39,6 +43,9 @@ export default async function SimulationPage({
     getAlgorithms().catch(() => []),
   ]);
   if (!s) notFound();
+  const feedback = s.assignments.flatMap((a) =>
+    a.feedback.map((f) => ({ ...f, studentName: a.student.user.name })),
+  );
   const settings = paramsSchema.parse(s.params);
   const metadata =
     s.metrics && typeof s.metrics === "object" && !Array.isArray(s.metrics)
@@ -112,8 +119,39 @@ export default async function SimulationPage({
         </p>
       )}
       <Metrics value={s.metrics} />
+      {s.algorithm === "placeholder" && (
+        <p className="hint mb-6">
+          Referencia heurística, sin garantía de optimalidad. Las preferencias
+          de desarrollo y dependencias entre plazas se reservan al modelo de
+          investigación.
+        </p>
+      )}
       {s.status === "COMPLETED" && (
         <>
+          <div className="mb-6 flex flex-wrap gap-3">
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/simulaciones/comparar?b=${id}${s.parentId ? `&a=${s.parentId}` : ""}`}
+              >
+                Comparar propuesta
+              </Link>
+            </Button>
+            <ExportButton
+              kind="assignments"
+              simulationId={id}
+              label="Asignaciones CSV"
+            />
+            <ExportButton
+              kind="metrics"
+              simulationId={id}
+              label="Métricas CSV"
+            />
+            <ExportButton
+              kind="feedback"
+              simulationId={id}
+              label="Valoraciones CSV"
+            />
+          </div>
           <h2 className="mb-4 text-lg font-semibold">
             Asignaciones{" "}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -132,6 +170,7 @@ export default async function SimulationPage({
             ]}
             rows={s.assignments.map((a) => ({
               id: a.id,
+              href: `/asignaciones/${a.id}`,
               student: a.student.user.name,
               company: a.placement?.company.name ?? "—",
               placement: a.placement?.title ?? "Sin asignar",
@@ -141,6 +180,33 @@ export default async function SimulationPage({
                 a.distanceKm == null ? "—" : `${a.distanceKm.toFixed(1)} km`,
             }))}
           />
+          <section className="mt-8">
+            <h2 className="mb-4 text-lg font-semibold">
+              Valoraciones de la propuesta{" "}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {feedback.length
+                  ? `${(feedback.reduce((sum, f) => sum + f.rating, 0) / feedback.length).toFixed(1)} / 5 · ${feedback.length} respuestas`
+                  : "Sin respuestas todavía"}
+              </span>
+            </h2>
+            {feedback.length > 0 && (
+              <DataTable
+                columns={[
+                  { key: "student", label: "Asignación" },
+                  { key: "role", label: "Perfil que valora" },
+                  { key: "rating", label: "Valoración" },
+                  { key: "comment", label: "Comentario" },
+                ]}
+                rows={feedback.map((f) => ({
+                  id: f.id,
+                  student: f.studentName,
+                  role: roleLabels[f.user.role],
+                  rating: f.rating,
+                  comment: f.comment || "Sin comentario",
+                }))}
+              />
+            )}
+          </section>
         </>
       )}
     </>
