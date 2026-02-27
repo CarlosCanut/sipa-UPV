@@ -33,6 +33,8 @@ def complete(instance: SolveRequest, result: AlgorithmResult) -> SolveResponse:
         if row.tutorId is not None:
             if row.tutorId not in tutors:
                 raise ValueError("Unknown tutor")
+            if tutors[row.tutorId].lat is None or tutors[row.tutorId].lng is None:
+                raise ValueError("Assigned tutors require coordinates")
             tutor_load[row.tutorId] += 1
             if tutor_load[row.tutorId] > tutors[row.tutorId].capacity:
                 raise ValueError("Tutor capacity exceeded")
@@ -43,6 +45,11 @@ def complete(instance: SolveRequest, result: AlgorithmResult) -> SolveResponse:
         distances.append(km)
         if placement.id in student.preferences:
             ranks.append(student.preferences.index(placement.id) + 1)
+    for placement in instance.placements:
+        if placement_load[placement.id] and placement.dependsOn and not placement_load[placement.dependsOn]:
+            raise ValueError("Unsatisfied placement dependency")
+    if result.status == "infeasible" and result.assignments:
+        raise ValueError("Infeasible status cannot contain assignments")
     priority = [student.id for student in instance.students if student.priority]
     total = len(seen)
     metrics = Metrics(

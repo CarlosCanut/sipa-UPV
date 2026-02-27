@@ -11,6 +11,7 @@ from app import app
 from contract import SolveRequest
 from geo import haversine_km
 from metrics import complete
+from settings import settings
 
 
 @pytest.fixture
@@ -95,11 +96,13 @@ def test_geo():
 
 
 def test_http_contract_and_auth(instance, monkeypatch):
-    monkeypatch.setenv("SOLVER_TOKEN", "test-secret")
+    monkeypatch.setenv("BACKEND_TOKEN", "test-secret-" * 4)
+    monkeypatch.setenv("USE_PLACEHOLDER_ALGORITHM", "true")
+    settings.cache_clear()
     with TestClient(app) as client:
-        assert client.get("/health").json() == {"ok": True}
+        assert client.get("/health").json() == {"ok": True, "algorithm": "placeholder"}
         assert client.post("/solve", json=instance.model_dump()).status_code == 401
-        headers = {"Authorization": "Bearer test-secret"}
+        headers = {"Authorization": "Bearer " + "test-secret-" * 4}
         assert client.get("/algorithms", headers=headers).json()[0]["key"] == "placeholder"
         response = client.post("/solve", json=instance.model_dump(), headers=headers)
         assert response.status_code == 200
@@ -107,3 +110,4 @@ def test_http_contract_and_auth(instance, monkeypatch):
         payload = json.loads(instance.model_dump_json())
         payload["algorithm"] = "missing"
         assert client.post("/solve", json=payload, headers=headers).status_code == 400
+    settings.cache_clear()

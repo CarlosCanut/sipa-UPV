@@ -1,13 +1,14 @@
 import { z } from "zod";
 
-export const weightsSchema = z
+const weightsSchema = z
   .object({
     preference: z.number().min(0).max(1),
     competency: z.number().min(0).max(1),
     distance: z.number().min(0).max(1),
+    development: z.number().min(0).max(1).default(0.1),
   })
   .refine(
-    (w) => w.preference + w.competency + w.distance > 0,
+    (w) => w.preference + w.competency + w.distance + w.development > 0,
     "Activa al menos un criterio.",
   );
 export const paramsSchema = z.object({
@@ -16,14 +17,21 @@ export const paramsSchema = z.object({
   assignTutors: z.boolean(),
   timeLimitSec: z.number().int().min(1).max(3600),
   seed: z.number().int().min(0).max(2147483647),
+  tutorTravelWeight: z.number().min(0).max(1).default(0.5),
 });
 export type SimulationParams = z.infer<typeof paramsSchema>;
 export const defaultParams: SimulationParams = {
-  weights: { preference: 0.5, competency: 0.3, distance: 0.2 },
+  weights: {
+    preference: 0.5,
+    competency: 0.3,
+    distance: 0.2,
+    development: 0.1,
+  },
   maxDistanceKm: 40,
   assignTutors: true,
   timeLimitSec: 300,
   seed: 1,
+  tutorTravelWeight: 0.5,
 };
 export const simulationSchema = z.object({
   name: z.string().trim().min(1, "Escribe un nombre.").max(100),
@@ -41,8 +49,8 @@ const locationSchema = z
     (v) => (v.lat === null) === (v.lng === null),
     "Completa ambas coordenadas.",
   );
-// Reuse these row schemas in the future CSV preview and write actions.
-export const studentRowSchema = locationSchema.safeExtend({
+// Anonymous instance sent to the assignment backend.
+const studentRowSchema = locationSchema.safeExtend({
   id: z.string(),
   maxDistanceKm: z.number().positive().max(1000).nullable(),
   priority: z.boolean(),
@@ -55,14 +63,14 @@ export const studentRowSchema = locationSchema.safeExtend({
     }),
   ),
 });
-export const placementRowSchema = locationSchema.safeExtend({
+const placementRowSchema = locationSchema.safeExtend({
   id: z.string(),
   companyId: z.string(),
   seats: z.number().int().nonnegative(),
   requirements: z.record(z.string(), z.number().int().min(1).max(5)),
   dependsOn: z.string().nullable(),
 });
-export const tutorRowSchema = locationSchema.safeExtend({
+const tutorRowSchema = locationSchema.safeExtend({
   id: z.string(),
   capacity: z.number().int().nonnegative(),
 });

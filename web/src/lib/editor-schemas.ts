@@ -37,11 +37,13 @@ export const companySchema = z.object({
 });
 export const placementSchema = location.safeExtend({
   title: name,
+  program: z.string().trim().max(150).optional(),
   description: note,
   companyId: id,
   competencyFormId: id,
   seats: z.number().int().min(0).max(1000),
   active: z.boolean(),
+  dependsOnId: id.nullable().optional(),
   requirements: z.record(id, z.number().int().min(1).max(5)),
 });
 export const competencySchema = z.object({ name, description: note });
@@ -71,6 +73,8 @@ export const pilotSchema = z.object({
   usefulness: z.number().int().min(1).max(5),
   satisfaction: z.number().int().min(1).max(5),
   barriers: note,
+  decisionMinutes: z.number().min(0).max(10080).nullable().optional(),
+  previousMethodMinutes: z.number().min(0).max(10080).nullable().optional(),
 });
 export type ProfileValues = z.infer<typeof profileSchema>;
 export type PlacementValues = z.infer<typeof placementSchema>;

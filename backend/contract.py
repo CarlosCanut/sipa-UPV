@@ -12,10 +12,11 @@ class Weights(Model):
     preference: float = Field(default=0.5, ge=0, le=1)
     competency: float = Field(default=0.3, ge=0, le=1)
     distance: float = Field(default=0.2, ge=0, le=1)
+    development: float = Field(default=0.1, ge=0, le=1)
 
     @model_validator(mode="after")
     def nonzero(self):
-        if self.preference + self.competency + self.distance <= 0:
+        if self.preference + self.competency + self.distance + self.development <= 0:
             raise ValueError("At least one weight must be positive")
         return self
 
@@ -26,6 +27,7 @@ class Params(Model):
     assignTutors: bool = True
     timeLimitSec: int = Field(default=300, ge=1, le=3600)
     seed: int = Field(default=1, ge=0, le=2147483647)
+    tutorTravelWeight: float = Field(default=0.5, ge=0, le=1)
 
 
 class Location(Model):
@@ -93,6 +95,15 @@ class SolveRequest(Model):
         for placement in self.placements:
             if placement.dependsOn is not None and placement.dependsOn not in placement_ids:
                 raise ValueError("Unknown placement dependency")
+        dependencies = {p.id: p.dependsOn for p in self.placements}
+        for placement in self.placements:
+            seen = set()
+            current = placement.id
+            while current is not None:
+                if current in seen:
+                    raise ValueError("Cyclic placement dependency")
+                seen.add(current)
+                current = dependencies[current]
         return self
 
 
@@ -107,7 +118,7 @@ class Assignment(Model):
 class AlgorithmResult(Model):
     status: Literal["optimal", "feasible", "infeasible", "timeout"]
     assignments: list[Assignment]
-    log: str = ""
+    log: str = Field(default="", max_length=20000)
 
 
 class Metrics(Model):

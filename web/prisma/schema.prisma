@@ -97,6 +97,7 @@ model Account {
   updatedAt             DateTime  @updatedAt
 
   @@index([userId])
+  @@unique([providerId, accountId])
   @@map("account")
 }
 
@@ -159,6 +160,7 @@ model Placement {
   companyId        String
   company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   title            String
+  program          String? // optional qualification guidance; not an eligibility constraint
   description      String?
   seats            Int            @default(1)
   address          String
@@ -254,7 +256,7 @@ model Simulation {
   id          String           @id @default(cuid())
   name        String
   status      SimulationStatus @default(RUNNING)
-  algorithm   String // clave del registro del solver: "placeholder", "sipa_ilp"…
+  algorithm   String // configured mode: "placeholder" or "external"
   params      Json // pesos, distancia máxima, asignar tutores, límite de tiempo…
   input       Json? // copia exacta de lo enviado al solver (reproducibilidad)
   metrics     Json? // calculadas por el solver con el mismo código para todos los algoritmos
@@ -315,6 +317,8 @@ model PilotResponse {
   id           String   @id @default(cuid())
   userId       String   @unique
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decisionMinutes       Float?
+  previousMethodMinutes Float?
   usability    Int
   usefulness   Int
   satisfaction Int

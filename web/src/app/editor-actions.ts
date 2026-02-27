@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "node:crypto";
+import { checkPlacementChanges } from "@/lib/placement-dependencies";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { assignmentScope } from "@/lib/assignment-scope";
@@ -28,16 +30,18 @@ export async function saveProfileAction(value: unknown, targetUserId?: string) {
   try {
     await db.$transaction(async (tx) => {
       const target = await tx.user.findUniqueOrThrow({ where: { id } });
-      await tx.user.update({ where: { id }, data: { name: p.name } });
+      if (target.role !== "STUDENT" || user.role === "ADMIN")
+        await tx.user.update({ where: { id }, data: { name: p.name } });
       const location = { address: p.address, lat: p.lat, lng: p.lng };
       if (target.role === "STUDENT")
         await tx.student.update({
           where: { userId: id },
           data: {
             ...location,
-            program: p.program,
             maxDistanceKm: p.maxDistanceKm,
-            ...(user.role === "ADMIN" ? { priority: p.priority } : {}),
+            ...(user.role === "ADMIN"
+              ? { program: p.program, priority: p.priority }
+              : {}),
           },
         });
       if (target.role === "TUTOR")
@@ -105,6 +109,8 @@ export async function savePlacementAction(value: unknown, id?: string) {
         include: { items: true },
       });
       const { requirements, ...data } = parsed.data;
+      const savedId = id ?? randomUUID();
+      await checkPlacementChanges(tx, [{ ...data, id: savedId }]);
       const keys = Object.keys(requirements);
       if (
         keys.length !== form.items.length ||
@@ -115,7 +121,7 @@ export async function savePlacementAction(value: unknown, id?: string) {
         );
       const saved = id
         ? await tx.placement.update({ where: { id }, data })
-        : await tx.placement.create({ data });
+        : await tx.placement.create({ data: { ...data, id: savedId } });
       await tx.placementRequirement.deleteMany({
         where: { placementId: saved.id },
       });

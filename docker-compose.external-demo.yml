@@ -1,0 +1,26 @@
+# Optional local test of the external HTTP integration; not a validated algorithm.
+services:
+  external-demo:
+    build: ./backend
+    environment:
+      APP_MODULE: examples.external_service:app
+      EXTERNAL_ALGORITHM_TOKEN: local-external-contract-test-token
+    healthcheck:
+      test:
+        [
+          CMD,
+          python,
+          -c,
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  backend:
+    environment:
+      USE_PLACEHOLDER_ALGORITHM: "false"
+      EXTERNAL_ALGORITHM_URL: http://external-demo:8000/solve
+      EXTERNAL_ALGORITHM_TOKEN: local-external-contract-test-token
+    depends_on:
+      external-demo:
+        condition: service_healthy

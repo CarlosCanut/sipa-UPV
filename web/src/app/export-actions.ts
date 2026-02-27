@@ -79,6 +79,7 @@ export async function exportCsvAction(
       ).map((p) => ({
         id: p.id,
         title: p.title,
+        program: p.program ?? "",
         companyId: p.companyId,
         description: p.description ?? "",
         seats: p.seats,
@@ -87,6 +88,7 @@ export async function exportCsvAction(
         lng: p.lng,
         competencyFormId: p.competencyFormId,
         active: p.active,
+        dependsOnId: p.dependsOnId,
         requirements: JSON.stringify(
           Object.fromEntries(
             p.requirements.map((r) => [r.competencyId, r.level]),
@@ -104,6 +106,8 @@ export async function exportCsvAction(
         "usefulness",
         "satisfaction",
         "barriers",
+        "decisionMinutes",
+        "previousMethodMinutes",
         "updatedAt",
       ];
       rows = (
@@ -117,6 +121,8 @@ export async function exportCsvAction(
         usefulness: r.usefulness,
         satisfaction: r.satisfaction,
         barriers: r.barriers,
+        decisionMinutes: r.decisionMinutes,
+        previousMethodMinutes: r.previousMethodMinutes,
         updatedAt: r.updatedAt.toISOString(),
       }));
       break;

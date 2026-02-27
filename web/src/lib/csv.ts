@@ -38,6 +38,7 @@ export const csvColumns: Record<ImportKind, string[]> = {
   plazas: [
     "id",
     "title",
+    "program",
     "companyId",
     "description",
     "seats",
@@ -46,6 +47,7 @@ export const csvColumns: Record<ImportKind, string[]> = {
     "lng",
     "competencyFormId",
     "active",
+    "dependsOnId",
     "requirements",
   ],
 };
@@ -137,6 +139,7 @@ export function parseImport(
             lng: number(row.lng),
             seats: Number(row.seats || "NaN"),
             active: boolean(row.active),
+            dependsOnId: row.dependsOnId || null,
             requirements: JSON.parse(row.requirements || "{}"),
           }),
         };

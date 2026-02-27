@@ -18,7 +18,7 @@ export async function launch(createdById: string, value: unknown) {
   after(() => runSimulation(id));
   return id;
 }
-export async function complete(id: string, value: unknown) {
+async function complete(id: string, value: unknown) {
   await db.$transaction(async (tx) => {
     const simulation = await tx.simulation.findUniqueOrThrow({ where: { id } });
     const response = validateResult(
@@ -59,7 +59,7 @@ export async function complete(id: string, value: unknown) {
     });
   });
 }
-export async function fail(id: string, message: string) {
+async function fail(id: string, message: string) {
   await db.$transaction(async (tx) => {
     const simulation = await tx.simulation.findUniqueOrThrow({ where: { id } });
     const changed = await tx.simulation.updateMany({
@@ -93,7 +93,7 @@ async function runSimulation(id: string) {
     );
     await fail(
       id,
-      "No se pudo completar la simulación. Comprueba el solver y relánzala.",
+      "No se pudo completar la simulación. Comprueba el servicio de asignación y relánzala.",
     );
   }
 }

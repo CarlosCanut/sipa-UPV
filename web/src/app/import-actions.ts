@@ -10,6 +10,7 @@ import {
 } from "@/lib/csv";
 import { InputError, mutationError } from "@/lib/mutation-error";
 import type { Prisma } from "@/generated/prisma/client";
+import { checkPlacementChanges } from "@/lib/placement-dependencies";
 
 async function checkRow(tx: Prisma.TransactionClient, row: ImportRow) {
   if (row.kind === "estudiantes" || row.kind === "tutores") {
@@ -127,6 +128,15 @@ export async function importCsvAction(
     const errors = await db.$transaction(
       async (tx) => {
         const errors: { row: number; message: string }[] = [];
+        const placements = parsed.rows.filter((row) => row.kind === "plazas");
+        if (placements.length)
+          await checkPlacementChanges(
+            tx,
+            placements.map((row, index) => ({
+              ...row.data,
+              id: row.data.id || `new-import-${index}`,
+            })),
+          );
         for (const [index, row] of parsed.rows.entries()) {
           try {
             await checkRow(tx, row);
@@ -146,12 +156,10 @@ export async function importCsvAction(
     return {
       count: parsed.rows.length,
       committed: commit,
-      preview: parsed.rows
-        .slice(0, 10)
-        .map((r) => ({
-          name: "name" in r.data ? r.data.name : r.data.title,
-          key: "email" in r.data ? r.data.email : r.data.id || "Nuevo registro",
-        })),
+      preview: parsed.rows.slice(0, 10).map((r) => ({
+        name: "name" in r.data ? r.data.name : r.data.title,
+        key: "email" in r.data ? r.data.email : r.data.id || "Nuevo registro",
+      })),
     };
   } catch (error) {
     return { ...mutationError(error), count: 0 };

@@ -31,7 +31,7 @@ export async function launchAction(value: unknown) {
   } catch {
     return {
       error:
-        "No se pudo iniciar. Revisa los datos y la conexión con el solver.",
+        "No se pudo iniciar. Revisa los datos y la conexión con el servicio de asignación.",
     };
   }
 }
@@ -105,6 +105,37 @@ export async function changePasswordAction(value: unknown) {
     return { error: "No se pudo cambiar. Comprueba la contraseña actual." };
   }
   return { ok: true };
+}
+export async function resetUserPasswordAction(userId: string) {
+  const { user } = await requireRole("ADMIN");
+  if (user.id === userId)
+    return { error: "Cambia tu propia contraseña desde Mi perfil." };
+  const password = randomBytes(18).toString("base64url");
+  try {
+    const hash = await hashPassword(password);
+    await db.$transaction(async (tx) => {
+      await tx.user.findUniqueOrThrow({
+        where: { id: z.string().min(1).parse(userId) },
+      });
+      await tx.account.upsert({
+        where: {
+          providerId_accountId: { providerId: "credential", accountId: userId },
+        },
+        update: { password: hash },
+        create: {
+          id: randomUUID(),
+          userId,
+          accountId: userId,
+          providerId: "credential",
+          password: hash,
+        },
+      });
+      await tx.session.deleteMany({ where: { userId } });
+    });
+    return { password };
+  } catch {
+    return { error: "No se pudo restablecer el acceso." };
+  }
 }
 export async function readNotificationAction(form: FormData) {
   const { user } = await requireRole();

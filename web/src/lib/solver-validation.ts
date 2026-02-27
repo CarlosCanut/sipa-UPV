@@ -35,7 +35,17 @@ export function validateResult(input: SolveInstance, value: unknown) {
       tutorLoads.set(row.tutorId, load);
       if (!tutor || load > tutor.capacity)
         throw new Error("Tutor desconocido o sin capacidad.");
+      if (tutor.lat === null || tutor.lng === null)
+        throw new Error("Tutor sin ubicación.");
     }
+  }
+  for (const placement of input.placements) {
+    if (
+      placementLoads.has(placement.id) &&
+      placement.dependsOn &&
+      !placementLoads.has(placement.dependsOn)
+    )
+      throw new Error("Dependencia entre plazas incumplida.");
   }
   for (const id of response.unassigned) {
     if (!students.has(id) || seen.has(id))

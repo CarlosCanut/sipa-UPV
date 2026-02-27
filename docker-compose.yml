@@ -16,19 +16,26 @@ services:
       retries: 20
     restart: unless-stopped
   migrate:
+    image: sipa-frontend
+    command: [node, deploy/migrate.mjs]
     build:
       context: .
       dockerfile: web/Dockerfile
-      target: migrator
-    env_file: .env
+      target: frontend
+    env_file: ${SIPA_ENV_FILE:-.env}
     depends_on:
       db:
         condition: service_healthy
+      backend:
+        condition: service_healthy
     restart: "no"
-  solver:
-    build: ./solver
+  backend:
+    build: ./backend
     environment:
-      SOLVER_TOKEN: ${SOLVER_TOKEN:-}
+      BACKEND_TOKEN: ${BACKEND_TOKEN:?Set BACKEND_TOKEN}
+      USE_PLACEHOLDER_ALGORITHM: ${USE_PLACEHOLDER_ALGORITHM:-true}
+      EXTERNAL_ALGORITHM_URL: ${EXTERNAL_ALGORITHM_URL:-}
+      EXTERNAL_ALGORITHM_TOKEN: ${EXTERNAL_ALGORITHM_TOKEN:-}
     healthcheck:
       test:
         [
@@ -41,21 +48,22 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
-  web:
+  frontend:
+    image: sipa-frontend
     build:
       context: .
       dockerfile: web/Dockerfile
-      target: runner
-    env_file: .env
+      target: frontend
+    env_file: ${SIPA_ENV_FILE:-.env}
     environment:
-      HOSTNAME: 0.0.0.0
+      HOSTNAME: "::"
       PORT: 3000
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
-      solver:
+      backend:
         condition: service_healthy
     healthcheck:
       test:
@@ -70,6 +78,12 @@ services:
       retries: 10
       start_period: 20s
     restart: unless-stopped
+  checks:
+    profiles: [checks]
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      target: checks
   caddy:
     image: caddy:2-alpine
     profiles: [public]
@@ -81,7 +95,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      web:
+      frontend:
         condition: service_healthy
     restart: unless-stopped
 volumes:
