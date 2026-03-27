@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FieldErrors } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { Check, CircleAlert, LoaderCircle } from "lucide-react";
 
 export function useSave() {
   const router = useRouter();
@@ -74,16 +75,29 @@ export function FormFooter({
             : "Revisa los campos obligatorios y los límites indicados."}
         </p>
       )}
-      {message && (
+      {message && (error || !dirty) && (
         <p
-          role="status"
-          className={error ? "error-text" : "text-sm text-primary"}
+          role={error ? "alert" : "status"}
+          className={`flex items-start gap-2 text-sm ${error ? "text-destructive" : "text-primary"}`}
         >
+          {error ? (
+            <CircleAlert
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+          ) : (
+            <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          )}
           {message}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-4">
-        <Button disabled={pending}>{pending ? "Guardando…" : label}</Button>
+        <Button disabled={pending}>
+          {pending && (
+            <LoaderCircle className="animate-spin" aria-hidden="true" />
+          )}
+          {pending ? "Guardando…" : label}
+        </Button>
         {dirty && <span className="hint">Tienes cambios sin guardar.</span>}
       </div>
     </div>

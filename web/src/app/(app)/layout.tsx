@@ -52,7 +52,7 @@ export default async function AppLayout({
                   </span>
                 )}
               </summary>
-              <div className="absolute right-0 z-30 mt-3 max-h-96 w-80 overflow-y-auto rounded-xl border bg-card p-3 shadow-sm">
+              <div className="absolute right-0 z-30 mt-3 max-h-96 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-xl border bg-card p-3 shadow-sm">
                 <h2 className="px-2 py-3 text-sm font-semibold">
                   Notificaciones
                 </h2>

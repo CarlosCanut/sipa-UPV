@@ -1,7 +1,15 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDownUp, ArrowRight, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowDownUp,
+  ArrowRight,
+  ArrowUp,
+  Search,
+  X,
+} from "lucide-react";
+import { HelpPopover } from "@/components/help-popover";
 import {
   flexRender,
   getCoreRowModel,
@@ -32,12 +40,17 @@ export function DataTable({
   rows,
   label = "Buscar…",
 }: {
-  columns: { key: string; label: string }[];
+  columns: { key: string; label: string; help?: string }[];
   rows: TableRowData[];
   label?: string;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filter, setFilter] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const clearSearch = () => {
+    setFilter("");
+    searchRef.current?.focus();
+  };
   const definitions = useMemo<ColumnDef<TableRowData>[]>(
     () =>
       columns.map(({ key, label }, index) => ({
@@ -50,7 +63,7 @@ export function DataTable({
               href={row.original.href}
             >
               {String(getValue() ?? "—")}
-              <ArrowRight size={14} />
+              <ArrowRight size={14} className="shrink-0" aria-hidden="true" />
             </Link>
           ) : (
             String(getValue() ?? "—")
@@ -75,19 +88,37 @@ export function DataTable({
   });
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-xs">
-          <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
+          <Search
+            className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
-            className="bg-card pl-9"
+            ref={searchRef}
+            className="bg-card pr-9 pl-9"
             aria-label={label}
             placeholder={label}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
+          {filter && (
+            <button
+              type="button"
+              aria-label="Limpiar búsqueda"
+              onClick={clearSearch}
+              className="absolute top-0.5 right-0.5 flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} registros
+        <span
+          role="status"
+          className="shrink-0 text-xs text-muted-foreground tabular-nums"
+        >
+          {table.getFilteredRowModel().rows.length}
+          {filter ? ` de ${rows.length}` : ""} registros
         </span>
       </div>
       <div className="overflow-hidden rounded-xl border bg-card">
@@ -107,16 +138,37 @@ export function DataTable({
                           : "none"
                     }
                   >
-                    <button
-                      onClick={header.column.getToggleSortingHandler()}
-                      className="flex items-center gap-2 text-xs font-medium"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={header.column.getToggleSortingHandler()}
+                        className="flex min-h-9 items-center gap-2 rounded-sm text-xs font-medium hover:text-primary"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {header.column.getIsSorted() === "asc" ? (
+                          <ArrowUp size={14} aria-hidden="true" />
+                        ) : header.column.getIsSorted() === "desc" ? (
+                          <ArrowDown size={14} aria-hidden="true" />
+                        ) : (
+                          <ArrowDownUp size={12} aria-hidden="true" />
+                        )}
+                      </button>
+                      {columns.find((column) => column.key === header.column.id)
+                        ?.help && (
+                        <HelpPopover
+                          label={String(header.column.columnDef.header)}
+                        >
+                          {
+                            columns.find(
+                              (column) => column.key === header.column.id,
+                            )?.help
+                          }
+                        </HelpPopover>
                       )}
-                      <ArrowDownUp size={12} />
-                    </button>
+                    </div>
                   </TableHead>
                 ))}
               </TableRow>
@@ -127,7 +179,10 @@ export function DataTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-5 py-4 text-sm">
+                    <TableCell
+                      key={cell.id}
+                      className="max-w-sm px-5 py-4 text-sm whitespace-normal break-words tabular-nums"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -140,9 +195,29 @@ export function DataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-32 text-center text-muted-foreground"
+                  className="h-44 px-5 text-center whitespace-normal"
                 >
-                  No hay registros que mostrar.
+                  <p className="font-medium">
+                    {filter
+                      ? "No hay coincidencias"
+                      : "Todavía no hay registros"}
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {filter
+                      ? "Prueba con otro nombre o limpia la búsqueda para ver todos los registros."
+                      : "Los datos aparecerán aquí cuando estén disponibles."}
+                  </p>
+                  {filter && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={clearSearch}
+                    >
+                      Mostrar todos los registros
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}

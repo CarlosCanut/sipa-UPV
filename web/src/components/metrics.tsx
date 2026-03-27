@@ -1,11 +1,12 @@
 import { metricsSchema } from "@/lib/schemas";
+import { HelpPopover } from "@/components/help-popover";
 export function Metrics({ value }: { value: unknown }) {
   const parsed = metricsSchema.safeParse(value);
   if (!parsed.success) return null;
   const m = parsed.data;
   const metrics = [
     ["Primera preferencia", `${m.firstChoicePct}%`, "Del alumnado asignado"],
-    ["Distancia media", `${m.avgKm} km`, "En línea recta · Haversine"],
+    ["Distancia media", `${m.avgKm} km`, "En línea recta"],
     ["Sin asignar", m.unassignedCount, "Pendientes de revisión"],
     [
       "Prioridad atendida",
@@ -26,10 +27,36 @@ export function Metrics({ value }: { value: unknown }) {
           </div>
         ))}
       </div>
-      <p className="mb-8 text-xs leading-6 text-muted-foreground">
-        Preferencia media: {m.avgPreferenceRank || "—"} · Distancia total:{" "}
-        {m.totalKm} km · Desviación de carga de tutores: {m.tutorLoadStdDev}
-      </p>
+      <dl className="mb-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <dt>Preferencia media</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {m.avgPreferenceRank || "—"}
+          </dd>
+          <HelpPopover label="Preferencia media">
+            Posición media de la plaza asignada en la lista de preferencias: 1
+            es la primera opción. Solo incluye asignaciones presentes en esa
+            lista.
+          </HelpPopover>
+        </div>
+        <div className="flex items-center gap-2">
+          <dt>Distancia total</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {m.totalKm} km
+          </dd>
+        </div>
+        <div className="flex items-center gap-2">
+          <dt>Desviación de carga de tutores</dt>
+          <dd className="font-medium text-foreground tabular-nums">
+            {m.tutorLoadStdDev}
+          </dd>
+          <HelpPopover label="Desviación de carga de tutores">
+            Mide cuánto varía el número de estudiantes entre tutores. 0 indica
+            el mismo número para todos; un valor mayor indica más diferencia.
+            Por sí sola, no refleja si se ha cubierto la demanda.
+          </HelpPopover>
+        </div>
+      </dl>
     </>
   );
 }

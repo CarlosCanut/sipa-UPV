@@ -1,16 +1,18 @@
 "use client";
+import { useId } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { placementSchema, type PlacementValues } from "@/lib/editor-schemas";
 import { savePlacementAction } from "@/app/editor-actions";
 import { Input } from "@/components/ui/input";
+import { HelpPopover } from "@/components/help-popover";
 import {
   FormFooter,
   nullableNumber,
   useSave,
 } from "@/components/editor-support";
 
-export type FormOption = {
+type FormOption = {
   id: string;
   name: string;
   items: { competencyId: string; competency: { name: string } }[];
@@ -20,12 +22,15 @@ export function PlacementForm({
   id,
   companies,
   forms,
+  dependencies,
 }: {
   initial: PlacementValues;
   id?: string;
   companies: { id: string; name: string }[];
   forms: FormOption[];
+  dependencies: { id: string; companyId: string; title: string }[];
 }) {
+  const dependencyId = useId();
   const {
     register,
     handleSubmit,
@@ -38,6 +43,7 @@ export function PlacementForm({
     defaultValues: initial,
   });
   const formId = useWatch({ control, name: "competencyFormId" });
+  const companyId = useWatch({ control, name: "companyId" });
   const form = forms.find((f) => f.id === formId);
   const status = useSave();
   return (
@@ -59,7 +65,13 @@ export function PlacementForm({
       </label>
       <label className="field">
         Empresa
-        <select className="select" {...register("companyId")}>
+        <select
+          className="select"
+          {...register("companyId", {
+            onChange: () =>
+              setValue("dependsOnId", null, { shouldDirty: true }),
+          })}
+        >
           {companies.map((c) => (
             <option value={c.id} key={c.id}>
               {c.name}
@@ -76,6 +88,17 @@ export function PlacementForm({
           required
           {...register("seats", { valueAsNumber: true })}
         />
+      </label>
+      <label className="field md:col-span-2">
+        Titulación orientativa (opcional)
+        <Input
+          {...register("program")}
+          maxLength={150}
+          placeholder="Por ejemplo, DAW o DAM"
+        />
+        <span className="hint">
+          Puedes dejarla vacía. El encaje se valora mediante las competencias.
+        </span>
       </label>
       <label className="field md:col-span-2">
         Descripción
@@ -173,9 +196,40 @@ export function PlacementForm({
           </span>
         </span>
       </label>
+      <div className="field md:col-span-2">
+        <div className="flex items-center gap-1">
+          <label htmlFor={dependencyId}>
+            Oferta previa necesaria (opcional)
+          </label>
+          <HelpPopover label="Oferta previa necesaria">
+            Por ejemplo, una oferta de apoyo puede depender de otra principal.
+            La de apoyo solo recibirá estudiantes si la principal recibe al
+            menos uno. Ambas deben ser de la misma empresa y no pueden depender
+            la una de la otra.
+          </HelpPopover>
+        </div>
+        <select
+          id={dependencyId}
+          className="select"
+          {...register("dependsOnId", { setValueAs: (value) => value || null })}
+        >
+          <option value="">Sin dependencia</option>
+          {dependencies
+            .filter((offer) => offer.companyId === companyId && offer.id !== id)
+            .map((offer) => (
+              <option key={offer.id} value={offer.id}>
+                {offer.title}
+              </option>
+            ))}
+        </select>
+        <span className="hint">
+          Esta oferta solo recibe estudiantes si la oferta previa tiene al menos
+          una plaza asignada.
+        </span>
+      </div>
       <FormFooter
         pending={isSubmitting}
-        dirty={isDirty}
+        dirty={isDirty || !id}
         errors={errors}
         {...status}
       />

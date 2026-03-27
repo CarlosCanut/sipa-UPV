@@ -2,17 +2,24 @@ import type { publishedAssignments } from "@/lib/published";
 import { DataTable } from "@/components/data-table";
 export function PublishedTable({
   rows,
+  role,
 }: {
   rows: Awaited<ReturnType<typeof publishedAssignments>>;
+  role: "COMPANY" | "TUTOR";
 }) {
   return rows.length ? (
     <DataTable
+      label={
+        role === "COMPANY"
+          ? "Buscar estudiante, plaza o tutor…"
+          : "Buscar estudiante, empresa o plaza…"
+      }
       columns={[
         { key: "name", label: "Estudiante" },
         { key: "program", label: "Titulación" },
-        { key: "company", label: "Empresa" },
+        ...(role === "TUTOR" ? [{ key: "company", label: "Empresa" }] : []),
         { key: "placement", label: "Plaza" },
-        { key: "tutor", label: "Tutor/a" },
+        ...(role === "COMPANY" ? [{ key: "tutor", label: "Tutor/a" }] : []),
         { key: "rating", label: "Tu valoración" },
       ]}
       rows={rows.map((a) => ({

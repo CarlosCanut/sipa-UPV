@@ -77,6 +77,8 @@ export function ImportForm() {
               </Link>
               . Este CSV completa sus fichas sin cambiar contraseñas.
             </>
+          ) : kind === "empresas" ? (
+            "Deja id vacío para crear una empresa o conserva el id para actualizarla."
           ) : (
             "Deja id vacío para crear un registro. En las ofertas usa companyId y competencyFormId existentes; requirements es un objeto JSON con identificadores de competencias y niveles 1–5."
           )}{" "}

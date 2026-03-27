@@ -16,6 +16,7 @@ import { FormFooter, useSave } from "@/components/editor-support";
 type Offer = {
   id: string;
   title: string;
+  program: string | null;
   company: string;
   address: string;
   seats: number;
@@ -57,6 +58,12 @@ export function PreferencesForm({
       .filter((o) => selected.includes(o.id))
       .flatMap((o) => o.requirements.map((r) => r.competencyId)),
   );
+  const available = offers.filter((offer) => !selected.includes(offer.id));
+  const matching = available.filter((offer) =>
+    `${offer.title} ${offer.company} ${offer.address}`
+      .toLocaleLowerCase("es")
+      .includes(query.trim().toLocaleLowerCase("es")),
+  );
   return (
     <form
       className="space-y-6"
@@ -88,7 +95,7 @@ export function PreferencesForm({
               if (!offer) return null;
               return (
                 <li
-                  className="flex items-center gap-3 rounded-lg border p-3"
+                  className="grid grid-cols-[1.75rem_1fr] items-center gap-3 rounded-lg border p-3 sm:flex"
                   key={id}
                 >
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-primary">
@@ -98,7 +105,7 @@ export function PreferencesForm({
                     <p className="text-sm font-medium">{offer.title}</p>
                     <p className="hint">{offer.company}</p>
                   </div>
-                  <div className="flex shrink-0">
+                  <div className="col-start-2 flex shrink-0 justify-end">
                     <Button
                       type="button"
                       variant="ghost"
@@ -145,66 +152,73 @@ export function PreferencesForm({
             onChange={(e) => setQuery(e.target.value)}
           />
           <div className="max-h-[30rem] space-y-3 overflow-y-auto pr-1">
-            {offers
-              .filter(
-                (o) =>
-                  !selected.includes(o.id) &&
-                  `${o.title} ${o.company} ${o.address}`
-                    .toLocaleLowerCase("es")
-                    .includes(query.toLocaleLowerCase("es")),
-              )
-              .map((offer) => (
-                <article className="rounded-lg border p-4" key={offer.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold">{offer.title}</h3>
-                      <p className="hint mt-1">
-                        {offer.company} · {offer.seats} plazas
-                      </p>
-                      <p className="hint">
-                        {offer.address || "Ubicación pendiente"}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Añadir ${offer.title} · ${offer.company}`}
-                      onClick={() => setSelection([...selected, offer.id])}
-                    >
-                      <Plus />
-                      <span className="hidden sm:inline">Añadir</span>
-                    </Button>
+            {matching.map((offer) => (
+              <article className="rounded-lg border p-4" key={offer.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">{offer.title}</h3>
+                    <p className="hint mt-1">
+                      {offer.company} · {offer.seats} plazas
+                    </p>
+                    <p className="hint">
+                      {offer.address || "Ubicación pendiente"}
+                    </p>
                   </div>
-                  <details className="mt-3 text-sm">
-                    <summary className="cursor-pointer text-primary">
-                      Ver descripción y competencias
-                    </summary>
-                    {offer.description && (
-                      <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
-                        {offer.description}
-                      </p>
-                    )}
-                    <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                      {offer.requirements.map((r) => (
-                        <li key={r.competencyId}>
-                          {r.name} · nivel {r.level}/5
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                </article>
-              ))}
-            {offers.every(
-              (o) =>
-                selected.includes(o.id) ||
-                !`${o.title} ${o.company} ${o.address}`
-                  .toLocaleLowerCase("es")
-                  .includes(query.toLocaleLowerCase("es")),
-            ) && (
-              <p className="hint py-4">
-                No quedan ofertas que coincidan con la búsqueda.
-              </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Añadir ${offer.title} · ${offer.company}`}
+                    onClick={() => setSelection([...selected, offer.id])}
+                  >
+                    <Plus />
+                    <span className="hidden sm:inline">Añadir</span>
+                  </Button>
+                </div>
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-primary">
+                    Ver descripción y competencias
+                  </summary>
+                  {offer.program && (
+                    <p className="hint mt-3">
+                      Titulación orientativa: {offer.program}
+                    </p>
+                  )}
+                  {offer.description && (
+                    <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {offer.description}
+                    </p>
+                  )}
+                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {offer.requirements.map((r) => (
+                      <li key={r.competencyId}>
+                        {r.name} · nivel {r.level}/5
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </article>
+            ))}
+            {matching.length === 0 && (
+              <div className="space-y-3 py-4" role="status">
+                <p className="hint">
+                  {available.length
+                    ? "No hay ofertas que coincidan con la búsqueda."
+                    : offers.length
+                      ? "Ya has añadido todas las ofertas disponibles."
+                      : "Todavía no hay ofertas disponibles. Coordinación te avisará cuando puedas elegir."}
+                </p>
+                {query && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuery("")}
+                  >
+                    Limpiar búsqueda
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </section>

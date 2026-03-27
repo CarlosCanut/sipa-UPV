@@ -44,6 +44,7 @@ export default async function PreferencesPage() {
         offers={placements.map((p) => ({
           id: p.id,
           title: p.title,
+          program: p.program,
           company: p.company.name,
           address: p.address,
           seats: p.seats,

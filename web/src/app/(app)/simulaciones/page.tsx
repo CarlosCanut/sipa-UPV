@@ -41,18 +41,20 @@ export default async function SimulationsPage() {
         <SimulationDialog algorithms={algorithms} />
       </PageHeading>
       <DataReadiness />
-      <p className="mb-6 rounded-lg border bg-accent p-4 text-sm text-accent-foreground">
-        El algoritmo disponible es una referencia heurística de demostración. La
-        integración del modelo SIPA validado y su evaluación en centros están
-        pendientes.
-      </p>
+      {algorithms.length > 0 && (
+        <p className="mb-6 rounded-lg border bg-accent p-4 text-sm text-accent-foreground">
+          {algorithms.some((algorithm) => algorithm.key === "external")
+            ? "Motor externo configurado. Revisa cada propuesta antes de publicarla."
+            : "Modo de demostración. Las propuestas permiten probar el proceso; no son resultados del modelo de investigación validado."}
+        </p>
+      )}
       <RefreshWhileRunning
         running={simulations.some((s) => s.status === "RUNNING")}
       />
       {!algorithms.length && (
         <p role="alert" className="panel mb-5 text-sm">
-          El solver no está disponible. Las propuestas guardadas siguen
-          accesibles.
+          El servicio de asignación no está disponible. Las propuestas guardadas
+          siguen accesibles.
         </p>
       )}
       <div className="mb-6 flex items-center gap-3 border-b pb-4 text-sm">

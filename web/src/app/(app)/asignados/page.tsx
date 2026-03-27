@@ -11,7 +11,7 @@ export default async function AssignedPage() {
         title="Alumnado asignado"
         description="Conoce a los estudiantes que realizarán sus prácticas en tu empresa."
       />
-      <PublishedTable rows={rows} />
+      <PublishedTable rows={rows} role="COMPANY" />
     </>
   );
 }

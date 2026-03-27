@@ -24,7 +24,7 @@ export default async function StudentsPage() {
           Actualizar disponibilidad
         </Link>
       </p>
-      <PublishedTable rows={rows} />
+      <PublishedTable rows={rows} role="TUTOR" />
     </>
   );
 }

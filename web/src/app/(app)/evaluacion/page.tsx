@@ -62,6 +62,8 @@ export default async function EvaluationPage() {
               { key: "usefulness", label: "Utilidad" },
               { key: "satisfaction", label: "Satisfacción" },
               { key: "barriers", label: "Barreras y mejoras" },
+              { key: "decisionMinutes", label: "Decisión SIPA (min)" },
+              { key: "previousMethodMinutes", label: "Método anterior (min)" },
             ]}
             rows={responses.map((r) => ({
               id: r.id,
@@ -70,6 +72,8 @@ export default async function EvaluationPage() {
               usefulness: r.usefulness,
               satisfaction: r.satisfaction,
               barriers: r.barriers || "Sin comentario",
+              decisionMinutes: r.decisionMinutes ?? "—",
+              previousMethodMinutes: r.previousMethodMinutes ?? "—",
             }))}
           />
         </section>
@@ -82,6 +86,8 @@ export default async function EvaluationPage() {
                 usefulness: own.usefulness,
                 satisfaction: own.satisfaction,
                 barriers: own.barriers ?? "",
+                decisionMinutes: own.decisionMinutes,
+                previousMethodMinutes: own.previousMethodMinutes,
               }
             : undefined
         }

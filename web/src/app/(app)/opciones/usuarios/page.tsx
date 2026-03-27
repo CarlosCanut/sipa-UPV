@@ -4,8 +4,9 @@ import { roleLabels } from "@/lib/roles";
 import { PageHeading } from "@/components/page-heading";
 import { CreateUserForm } from "@/components/account-forms";
 import { DataTable } from "@/components/data-table";
+import { ResetUserPassword } from "@/components/reset-user-password";
 export default async function UsersPage() {
-  await requireRole("ADMIN");
+  const { user } = await requireRole("ADMIN");
   const [companies, users] = await Promise.all([
     db.company.findMany({
       select: { id: true, name: true },
@@ -18,7 +19,13 @@ export default async function UsersPage() {
       <PageHeading
         title="Usuarios"
         description="Facilita el acceso al proyecto y asigna el rol adecuado a cada persona."
-      />
+      >
+        <ResetUserPassword
+          users={users
+            .filter((u) => u.id !== user.id)
+            .map(({ id, name, email }) => ({ id, name, email }))}
+        />
+      </PageHeading>
       <CreateUserForm companies={companies} />
       <DataTable
         columns={[

@@ -129,7 +129,7 @@ export function CreateUserForm({
           <p className="hint">
             La persona puede cambiarla en Opciones › Perfil. Las nuevas fichas
             de estudiante y tutor se crean sin coordenadas; deben completarse
-            antes de participar en el solver.
+            antes de participar en una simulación.
           </p>
         </div>
       )}

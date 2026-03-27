@@ -4,7 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { feedbackSchema, pilotSchema } from "@/lib/editor-schemas";
 import { saveFeedbackAction, savePilotAction } from "@/app/editor-actions";
-import { FormFooter, useSave } from "@/components/editor-support";
+import {
+  FormFooter,
+  useSave,
+  nullableNumber,
+} from "@/components/editor-support";
+import { Input } from "@/components/ui/input";
 
 export function FeedbackForm({
   assignmentId,
@@ -108,6 +113,8 @@ export function PilotForm({
       usefulness: 0,
       satisfaction: 0,
       barriers: "",
+      decisionMinutes: null,
+      previousMethodMinutes: null,
     },
   });
   const status = useSave();
@@ -163,6 +170,34 @@ export function PilotForm({
           Opcional. Describe problemas de uso o mejoras, sin datos sensibles.
         </span>
       </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="field">
+          Tiempo para revisar y decidir con SIPA (min)
+          <Input
+            type="number"
+            min={0}
+            max={10080}
+            step="0.1"
+            {...register("decisionMinutes", { setValueAs: nullableNumber })}
+          />
+        </label>
+        <label className="field">
+          Tiempo habitual con el método anterior (min)
+          <Input
+            type="number"
+            min={0}
+            max={10080}
+            step="0.1"
+            {...register("previousMethodMinutes", {
+              setValueAs: nullableNumber,
+            })}
+          />
+        </label>
+      </div>
+      <p className="hint">
+        Opcionales. Son estimaciones personales para comparar la experiencia; no
+        son el tiempo de cálculo del algoritmo.
+      </p>
       <FormFooter
         pending={isSubmitting}
         dirty={isDirty}

@@ -5,6 +5,7 @@ import type { Role } from "@/generated/prisma/client";
 import { profileSchema, type ProfileValues } from "@/lib/editor-schemas";
 import { saveProfileAction } from "@/app/editor-actions";
 import { Input } from "@/components/ui/input";
+import { HelpPopover } from "@/components/help-popover";
 import {
   FormFooter,
   nullableNumber,
@@ -48,6 +49,12 @@ export function ProfileForm({
         Nombre
         <Input
           {...register("name")}
+          readOnly={role === "STUDENT" && !admin}
+          className={
+            role === "STUDENT" && !admin
+              ? "bg-muted text-muted-foreground"
+              : undefined
+          }
           autoComplete="name"
           minLength={2}
           maxLength={120}
@@ -58,7 +65,18 @@ export function ProfileForm({
         <>
           <label className="field">
             Titulación
-            <Input {...register("program")} maxLength={150} />
+            <Input
+              {...register("program")}
+              maxLength={150}
+              readOnly={!admin}
+              className={!admin ? "bg-muted text-muted-foreground" : undefined}
+            />
+            {!admin && (
+              <span className="hint">
+                Tu nombre y titulación los gestiona coordinación. Contacta con
+                tu centro para corregirlos.
+              </span>
+            )}
           </label>
           <label className="field">
             Distancia máxima (km)
@@ -131,11 +149,18 @@ export function ProfileForm({
               placeholder="-0.3763"
             />
           </label>
-          <p className="hint md:col-span-2">
-            Las coordenadas permiten estimar distancias en línea recta. Copia
-            latitud y longitud desde tu mapa. Sin ambas, no podrás participar en
-            el cálculo.
-          </p>
+          <div className="flex items-start gap-2 md:col-span-2">
+            <p className="hint">
+              Completa ambas coordenadas para participar en el cálculo de
+              distancias en línea recta.
+            </p>
+            <HelpPopover label="Coordenadas">
+              Busca tu localidad o centro de referencia en un mapa y copia sus
+              coordenadas: el primer número es la latitud y el segundo, la
+              longitud. Escribir la dirección no rellena estos campos
+              automáticamente.
+            </HelpPopover>
+          </div>
         </>
       )}
       {admin && role === "STUDENT" && (

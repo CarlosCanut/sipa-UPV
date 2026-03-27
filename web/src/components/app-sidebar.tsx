@@ -62,7 +62,11 @@ export function AppSidebar({ user }: { user: { name: string; role: Role } }) {
   return (
     <Sidebar>
       <SidebarHeader className="px-5 py-7">
-        <Link href="/" className="flex items-center gap-3">
+        <Link
+          href="/"
+          className="flex items-center gap-3"
+          onClick={() => setOpenMobile(false)}
+        >
           <Image
             src="/upv-logo.svg"
             alt="SIPA · símbolo provisional"
@@ -104,7 +108,13 @@ export function AppSidebar({ user }: { user: { name: string; role: Role } }) {
                   isActive={pathname.startsWith(item.href)}
                   className="h-11"
                 >
-                  <Link href={item.href} onClick={() => setOpenMobile(false)}>
+                  <Link
+                    href={item.href}
+                    aria-current={
+                      pathname.startsWith(item.href) ? "page" : undefined
+                    }
+                    onClick={() => setOpenMobile(false)}
+                  >
                     <item.icon />
                     <span>{item.label}</span>
                   </Link>
@@ -141,13 +151,19 @@ export function AppSidebar({ user }: { user: { name: string; role: Role } }) {
             {user.role === "ADMIN" && (
               <>
                 <DropdownMenuItem asChild>
-                  <Link href="/opciones/competencias">
+                  <Link
+                    href="/opciones/competencias"
+                    onClick={() => setOpenMobile(false)}
+                  >
                     <FileCheck2 />
                     Competencias y formularios
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/opciones/usuarios">
+                  <Link
+                    href="/opciones/usuarios"
+                    onClick={() => setOpenMobile(false)}
+                  >
                     <Users />
                     Usuarios
                   </Link>
@@ -156,7 +172,10 @@ export function AppSidebar({ user }: { user: { name: string; role: Role } }) {
               </>
             )}
             <DropdownMenuItem asChild>
-              <Link href="/opciones/perfil">
+              <Link
+                href="/opciones/perfil"
+                onClick={() => setOpenMobile(false)}
+              >
                 <UserRound />
                 Perfil
               </Link>

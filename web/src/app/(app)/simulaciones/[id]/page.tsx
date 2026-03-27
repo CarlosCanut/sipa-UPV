@@ -114,16 +114,16 @@ export default async function SimulationPage({
       )}
       {metadata.solverStatus === "timeout" && (
         <p className="panel mb-6 text-sm">
-          El solver alcanzó el tiempo límite. Estos son los resultados
+          El cálculo alcanzó el tiempo límite. Estos son los resultados
           parciales; revísalos antes de publicar.
         </p>
       )}
       <Metrics value={s.metrics} />
       {s.algorithm === "placeholder" && (
         <p className="hint mb-6">
-          Referencia heurística, sin garantía de optimalidad. Las preferencias
-          de desarrollo y dependencias entre plazas se reservan al modelo de
-          investigación.
+          Propuesta de demostración. Tiene en cuenta los criterios configurados
+          y las dependencias entre plazas, pero no garantiza la mejor solución
+          posible.
         </p>
       )}
       {s.status === "COMPLETED" && (
@@ -165,8 +165,16 @@ export default async function SimulationPage({
               { key: "company", label: "Empresa" },
               { key: "placement", label: "Plaza" },
               { key: "tutor", label: "Tutor/a" },
-              { key: "score", label: "Puntuación" },
-              { key: "distance", label: "Distancia" },
+              {
+                key: "score",
+                label: "Puntuación",
+                help: "Valor de 0 a 1 calculado por el algoritmo según los criterios de esta propuesta. Un valor mayor indica mejor ajuste; no es una probabilidad.",
+              },
+              {
+                key: "distance",
+                label: "Distancia",
+                help: "Distancia en línea recta entre la ubicación de referencia del estudiante y la plaza. No representa una ruta ni un tiempo de viaje.",
+              },
             ]}
             rows={s.assignments.map((a) => ({
               id: a.id,
