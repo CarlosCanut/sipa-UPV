@@ -1,154 +1,84 @@
 # SIPA · Prácticas
 
-A small, self-hosted pilot application for assigning students to company placements and academic tutors. Two npm workspaces coordinated by **Turborepo**: **Next.js 16 / React / TypeScript** in `web`, and **Python 3.12 / FastAPI** in `solver`. PostgreSQL 17 is the only database. UI text is Spanish.
+A Spanish-language MVP for coordinating student placements, companies and academic tutors. Two Turborepo workspaces: **`web`** (Next.js/React/TypeScript) and **`backend`** (Python/FastAPI, formerly `solver`). PostgreSQL stores application data, users, hashed credentials and sessions.
 
-## Run with Docker
+## Run locally
 
-Requires Docker Engine/Desktop with Compose v2. From `demo/`:
+Requires Docker with Compose v2. From this directory:
 
 ```sh
 cp .env.example .env
-# Edit .env: set BETTER_AUTH_SECRET using `openssl rand -base64 32`.
+# Generate two different secrets; paste them into BETTER_AUTH_SECRET and BACKEND_TOKEN.
+openssl rand -hex 32
+openssl rand -hex 32
 docker compose up -d --build
 ```
 
-Open **http://127.0.0.1:3000**. `docker compose ps -a` should show healthy `db`, `solver`, and `web`, plus `migrate` exited with code 0. No host Node/Python installation is needed. Port 3000 must be free; the existing reference demo on 8787 is independent.
+Open [SIPA](http://127.0.0.1:3000). `docker compose ps -a` should show healthy **frontend**, **backend**, **db**, and **migrate** exited with code 0. No host Node/Python installation is needed. An existing `.env` should be updated, not overwritten; upgrading from the former service names is covered in the [deployment guide](docs/deployment.md).
 
-| Role         | Email                   | Initial password                        |
-| ------------ | ----------------------- | --------------------------------------- |
-| Coordination | `admin@sipa.local`      | `change-me-now` (`SEED_ADMIN_PASSWORD`) |
-| Student      | `estudiante@sipa.local` | `SipaDemo2026!` (`SEED_DEMO_PASSWORD`)  |
-| Company      | `empresa@sipa.local`    | Same demo password                      |
-| Tutor        | `tutor@sipa.local`      | Same demo password                      |
+| Role         | First login             | Initial password |
+| ------------ | ----------------------- | ---------------- |
+| Coordination | `admin@sipa.local`      | `change-me-now`  |
+| Student      | `estudiante@sipa.local` | `SipaDemo2026!`  |
+| Company      | `empresa@sipa.local`    | `SipaDemo2026!`  |
+| Tutor        | `tutor@sipa.local`      | `SipaDemo2026!`  |
 
-The seed adds 30 synthetic students (5 priority), 5 companies, 12 offers with 36 seats, 6 tutors, 6 competencies, and 2 forms. Only the listed demo accounts have passwords; other synthetic users are data records. Change the seed passwords before deployment. Upserts preserve existing records and password changes; changing seed environment variables does not reset an existing account.
+All **42 fictional users** can sign in: also `estudiante2@sipa.local` through `estudiante30@sipa.local`, `empresa2` through `empresa5`, and `tutor2` through `tutor6` at `sipa.local`. Their password is `SEED_DEMO_PASSWORD`. A fresh database includes 30 students, 5 companies, 12 offers, 6 tutors, competencies, preferences, two completed scenarios, one publication, notifications and clearly labelled sample feedback.
 
-## What works
+Seeding preserves existing passwords, edited profiles/preferences and existing simulations/publication. Change passwords in Mi perfil; coordination can create accounts or reset another user's access in Usuarios. There is no public signup. For real deployments, choose your own initial admin credentials and set `SEED_DEMO_DATA=false` on an empty database.
 
-- **Coordination:** accounts, editable project data, validated CSV preview/import, competencies/forms, readiness checks, simulations, comparisons, publication, feedback and CSV exports.
-- **Students:** ranked offers, competency self-assessment/development interests, location/travel limit, published assignment, contacts and rating.
-- **Companies:** offers, capacity/location/competency requirements, deactivation, assigned students, contacts and rating.
-- **Tutors:** location/capacity, assigned workload, contacts and rating.
-- **Everyone:** profile/password, notifications, an editable pilot questionnaire, responsive navigation and server-side access checks.
+## Try the complete flow
 
-The solver is still a **greedy demonstration baseline**, not the validated research model. Development interests and dependencies are not enforced by it. Research integration, real-center validation and impact claims remain pending. See [requirements coverage](docs/requirements.md) and [navigation](docs/navigation.md).
+1. Coordination reviews **Datos**, creates accounts, imports validated CSV and maintains competencies/forms.
+2. Students rank offers, record skills and development interests; center-managed identity and qualification fields are protected. Companies create/copy offers with optional qualification guidance, requirements, seats and dependencies. Tutors set location and capacity.
+3. Coordination creates simulations, adjusts preference/competency/development/distance weights and tutor travel/load balance, compares proposals and publishes one.
+4. Each participant sees their own assignments and contacts, submits a rating, and completes the pilot questionnaire, including optional decision-time measurements. Coordination exports results and feedback.
 
-CSV: download a current dataset or template from Datos → Importar CSV, edit it, preview errors, then import. Student/tutor accounts must already exist. Coordinates are entered manually; no geocoding service is needed. Exports of assignments, metrics and ratings are on each simulation; questionnaire exports are in Evaluación del piloto.
+The built-in algorithm is a capacity-aware **demonstration heuristic**. To use a research service, set `USE_PLACEHOLDER_ALGORITHM=false`, `EXTERNAL_ALGORITHM_URL` and, if required, `EXTERNAL_ALGORITHM_TOKEN`. External errors fail the simulation; they never silently switch algorithms. See the [algorithm contract](backend/README.md) and [proposal coverage](docs/requirements.md). The validated research algorithm and real-center pilot evidence still need to be supplied.
 
 ## Architecture and files
 
 ```text
-Browser ── Next.js pages + Server Actions ── PostgreSQL 17
-                      │
-                      └── private FastAPI solver (IDs, coordinates, levels only)
+Browser ── frontend:3000 ── PostgreSQL:5432
+           Next.js            users, credentials, sessions, pilot data
+               │
+               └── backend:8000 ── placeholder OR external algorithm endpoint
+                   FastAPI         IDs, coordinates and skills only
 
-web/
-  src/app/             Spanish routes, Server Actions, auth and health handlers
-  src/components/      App shell, forms, tables; ui/ contains shadcn primitives
-  src/lib/             Auth/role guards, Prisma client, Zod schemas, simulation lifecycle
-  prisma/              Schema + pilot questionnaire extension, migrations, idempotent seed
-  prisma.config.ts     Prisma 7 configuration
-  Dockerfile           deps → builder → migrator / non-root runner
-solver/
-  contract.py          Pydantic request and response contract
-  algorithms/          Registry and replaceable greedy baseline
-  metrics.py, geo.py   Shared validation, metrics and Haversine distances
-  tests/               Contract, capacity, determinism and API tests
-  README.md            Researcher integration guide and metric definitions
-deploy/Caddyfile        Optional public HTTPS reverse proxy
-docker-compose.yml     db, migrate, solver, web; optional caddy
-docker-compose.dev.yml Local-only database/solver ports for host development
-turbo.json             Task graph, caching and environment forwarding
-docs/                  Requirement coverage and navigation map
-AGENTS.md              Short contributor conventions
+migrate (one-shot, frontend image) ── Prisma migrations + optional seed ── PostgreSQL
 ```
 
-A launch stores an immutable anonymized input snapshot, creates a `RUNNING` row, then uses Next.js `after()` to call the solver. An undici dispatcher supports long responses. Completion writes all assignments, metrics and a notification in one transaction. Stale runs fail on list/detail load after the configured limit plus five minutes. Publishing serializes requests with a PostgreSQL advisory lock and atomically replaces the current publication. No queue or extra API service is needed.
+Authentication and database mutations run in Next.js on the server. The browser never receives backend credentials. The Python container validates assignments and computes common metrics; it does not need database access. **Prisma migrations run from the frontend image; PostgreSQL runs separately with persistent storage.** Railway uses the same image in a pre-deploy job.
 
-`after()` is in-process, so interrupted work must be relaunched. The Docker deployment has no serverless execution limit; other hosting environments must allow the solver time limit plus 60 seconds. Metrics retain `solverStatus` and `log`, including partial timeout outcomes. The placeholder ignores dependency/development metadata; see the solver README for exact semantics.
+| Path                                         | Contents                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| `web/src/app/`                               | Pages, protected Server Actions, authentication and health routes    |
+| `web/src/components/`, `web/src/lib/`        | Forms/UI, auth/role checks, validation, CSV and simulation lifecycle |
+| `web/prisma/`                                | Database schema, committed migrations, idempotent seed               |
+| `backend/`                                   | FastAPI, contracts, placeholder, external adapter and tests          |
+| `web/Dockerfile`, `backend/Dockerfile`       | Separate production images, non-root processes                       |
+| `deploy/migrate.mjs`                         | Shared local/Railway migration and seed entry point                  |
+| `docker-compose*.yml`                        | Local stack, development ports, external-contract example            |
+| `docs/deployment.md`                         | Local operations, Railway setup, environment variables and backups   |
+| `docs/requirements.md`, `docs/navigation.md` | Coverage, limits and navigation map                                  |
 
-## Configuration
-
-All application endpoints and secrets are runtime environment variables; the image builds without database access or secrets.
-
-| Variable              | Purpose                                                                                |
-| --------------------- | -------------------------------------------------------------------------------------- |
-| `POSTGRES_USER`       | Initial PostgreSQL user.                                                               |
-| `POSTGRES_PASSWORD`   | Initial database password; keep consistent with `DATABASE_URL`.                        |
-| `POSTGRES_DB`         | Initial database name.                                                                 |
-| `DATABASE_URL`        | Prisma PostgreSQL URL; Compose uses host `db`; URL-encode special password characters. |
-| `APP_URL`             | Exact public origin used by Better Auth, e.g. `http://127.0.0.1:3000`.                 |
-| `BETTER_AUTH_SECRET`  | Required session secret of at least 32 characters.                                     |
-| `SEED_ADMIN_EMAIL`    | Initial admin email.                                                                   |
-| `SEED_ADMIN_PASSWORD` | Initial admin password, at least 12 characters.                                        |
-| `SEED_DEMO_DATA`      | `true` adds synthetic pilot data; `false` seeds only the admin.                        |
-| `SEED_DEMO_PASSWORD`  | Initial password for the three demo logins.                                            |
-| `SOLVER_URL`          | Internal solver origin; Compose uses `http://solver:8000`.                             |
-| `SOLVER_TOKEN`        | Optional shared bearer token; set it when splitting solver hosts.                      |
-| `DOMAIN`              | Hostname used by the optional Caddy public profile.                                    |
-
-Use the exact `APP_URL` in the browser so auth cookies and origin checks agree. Database and solver ports are private in the default Compose configuration. Changing `POSTGRES_*` after initialization does not change credentials in an existing volume.
-
-## Develop and check
-
-Requires Node 22.12+ (22 LTS recommended) and Python 3.12. Docker remains the shortest path.
+## Checks and development
 
 ```sh
-npm ci
-python3.12 -m venv solver/.venv
-solver/.venv/bin/pip install -r solver/requirements.txt
-# Run only PostgreSQL in Docker; Turbo will run both application workspaces.
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
-cp .env web/.env
-# In web/.env use DATABASE_URL host localhost:5433 and SOLVER_URL http://127.0.0.1:8000.
-# If SOLVER_TOKEN is set, export the same value before starting the local Python solver.
-npm run db:generate
-npm run db:migrate -- --name init
-npm run db:seed
-npm run dev
+docker compose run --rm backend pytest
+docker compose --profile checks run --build --rm checks
 ```
 
-Stop the Docker `web` and `solver` services first if they are already running, to free ports 3000/8000. `npm run db:migrate -- --name <change>` generates schema changes; commit every migration. The initial migration is already included, so the first migration command normally just applies it. Never use `prisma db push` for production.
+For host development, use Node 22.12+ and Python 3.12. Run `npm ci`, create `backend/.venv`, install `backend/requirements.txt`, and start PostgreSQL with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db`. Copy `.env` to `web/.env`; change its database host to `127.0.0.1:5433` and `BACKEND_URL` to `http://127.0.0.1:8000`. Export `BACKEND_TOKEN` and the algorithm settings in the shell. Stop container frontend/backend before `npm run dev` to free their ports.
 
-```sh
-npm run lint
-npm run typecheck
-npm run test                # Web validation/CSV/scope/metric tests + Python pytest via Turbo (local venv required)
-npm run build
-# Docker equivalents:
-docker compose run --rm solver pytest
-docker compose run --rm --no-deps migrate sh -c 'npm run lint && npm run typecheck && npm run test -w @sipa/web'
-```
+`npm run db:generate` builds Prisma types. `npm run db:migrate -- --name <change>` generates/applies development migrations; commit them. `npm run db:seed` seeds with a running backend (or `SEED_DEMO_RESULTS=false`). Use `npm run lint`, `npm run typecheck`, `npm run test` and `npm run build` for host checks. Deployment uses `migrate deploy`, never `db push`.
 
-## Public HTTPS
+Simulation execution uses Next.js `after()` in a long-running process. For this MVP keep one frontend replica, disable service sleeping and avoid redeploying during runs. Interrupted runs are marked failed after their limit plus five minutes when viewed, and can be relaunched. See [operational limits](docs/deployment.md#operational-limits).
 
-Point your domain's DNS to the server and allow ports 80/443. Set `DOMAIN=practicas.example.org`, `APP_URL=https://practicas.example.org`, real passwords and a strong auth secret, then run:
+The logo and teal brand tokens remain provisional; the included SVG is not an official UPV mark.
 
-```sh
-docker compose --profile public up -d --build
-```
+UI components use the existing Radix primitives and shared design tokens. `HelpPopover` supplies optional explanations on click, touch or keyboard; essential instructions stay beside the fields. Simulation settings separate advanced options, and shared tables include search recovery and visible sort direction. There are no additional UI dependencies.
 
-Caddy obtains and renews certificates. This requires a real domain and is not part of local verification. For a clean non-demo deployment set `SEED_DEMO_DATA=false` before initializing a fresh database.
+Verified 29 October 2026: production Docker build, fresh installation and existing-data upgrade, 43 unit tests, lint/types, real database authentication and role flows, external HTTP success/failure, and data preservation after reseeding/restarts. See [verification details](docs/verification.md).
 
-## Data and backups
-
-`docker compose down` preserves PostgreSQL in the named `pgdata` volume; `up -d` applies migrations and reruns the safe seed. `down -v` deletes the data—do not use it for normal restarts.
-
-```sh
-mkdir -p backups
-docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backups/sipa.dump
-# Restore into an empty database; stop the web service while restoring:
-docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' < backups/sipa.dump
-```
-
-## Branding
-
-The 52 px `web/public/upv-logo.svg` is a neutral placeholder, not an official UPV mark. Replace it with the official SVG from the UPV brand pack after brand-use approval. The marked CSS tokens in `globals.css` are provisional teal; no institutional red is used as a brand color.
-
-Framework references: [Papa Parse CSV](https://www.papaparse.com/docs), [Next.js after](https://nextjs.org/docs/app/api-reference/functions/after), [Better Auth Next.js integration](https://better-auth.com/docs/integrations/next), [Prisma 7 configuration](https://www.prisma.io/docs/orm/v7/reference/prisma-config-reference).
-
-## Verification
-
-Verified 27 October 2026: production Docker build and migration; 12 web tests, 11 solver tests, ESLint and TypeScript; browser checks for all four roles, ranking, profile/offer/catalog saves, assignment feedback, survey, scenario comparison, CSV template download and phone-width navigation. Direct HTTP checks cover admin-only actions, profile/offer ownership, priority escalation, published-assignment feedback, atomic CSV rejection/import and all eight export types. Temporary test records were removed. Existing demo records and publication were preserved.
-
-Base acceptance on 22 October also covered clean-volume startup, simulation/rerun/publication and persistence across restarts. Public HTTPS requires a real domain. Synthetic technical checks do not constitute a field pilot.
+UI cleanup verified 30 October: four role views, keyboard-accessible help, mobile layouts down to 320px and table/form feedback. Type checking also rejects unused locals and parameters.

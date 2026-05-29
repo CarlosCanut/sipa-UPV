@@ -6,11 +6,11 @@ Login redirects each user to their role's home. The sidebar keeps daily work vis
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Coordination | `/simulaciones` → new dialog → `/simulaciones/[id]` → adjust/rerun, compare, export, publish. `/simulaciones/comparar` links back to either result.                                                                             |
 | Coordination | `/datos?tab=estudiantes\|tutores\|empresas\|plazas` → `/datos/[type]/[id]` or `/plazas/[id]`; `/datos/importar` → preview → commit → data tab. New student/tutor → `/opciones/usuarios`; new company → `/datos/empresas/nueva`. |
-| Coordination | Options → `/opciones/competencias` (catalog/forms) or `/opciones/usuarios` (accounts). `/evaluacion` includes responses, aggregates and export.                                                                                 |
+| Coordination | Options → `/opciones/competencias` (catalog/forms) or `/opciones/usuarios` (create accounts and reset access). `/evaluacion` includes responses, aggregates and export.                                                         |
 | Student      | `/mi-asignacion` → `/asignaciones/[id]` (contacts); feedback on both views. `/preferencias` → catalog, ranking and competencies; link to profile logistics.                                                                     |
-| Company      | `/asignados` → `/asignaciones/[id]` → feedback. `/plazas` → `/plazas/nueva` or `/plazas/[id]` → save/deactivate. Company details in profile.                                                                                    |
+| Company      | `/asignados` → `/asignaciones/[id]` → feedback. `/plazas` → `/plazas/nueva` or `/plazas/[id]` → save/deactivate/copy; copies open `/plazas/nueva?copiar=[id]` for review. Company details in profile.                           |
 | Tutor        | `/mis-estudiantes` → `/asignaciones/[id]` → feedback. Capacity summary → profile availability.                                                                                                                                  |
-| Everyone     | `/opciones/perfil` → personal details, role-specific location/capacity and password. `/evaluacion` → own questionnaire. Bell → event destination, marked read. Options → sign out → `/login`.                                   |
+| Everyone     | `/opciones/perfil` → personal details, role-specific location/capacity and password. `/evaluacion` → own questionnaire and optional decision times. Bell → event destination, marked read. Options → sign out → `/login`.       |
 
 ```mermaid
 flowchart TD
@@ -30,10 +30,12 @@ flowchart TD
     Data --> Edit[Edit actors, companies and offers]
     Data --> Import[CSV preview and import]
     Import --> Data
-    A --> Users[Accounts]
+    A --> Users[Create accounts and reset access]
     A --> Catalog[Competencies and forms]
     S --> Preferences[Rank offers and assess skills]
-    C --> Offers[Create, edit or deactivate offers]
+    C --> Offers[Create, edit, copy or deactivate offers]
+    Offers --> Copy[Review copy with optional qualification]
+    Copy --> Offers
     S --> Detail[Scoped assignment details and contacts]
     C --> Detail
     T --> Detail
